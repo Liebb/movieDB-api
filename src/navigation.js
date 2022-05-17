@@ -114,6 +114,9 @@ function movieDetailsPage() {
     categoriesPreviewSection.classList.add('inactive');
     genericSection.classList.add('inactive');
     movieDetailSection.classList.remove('inactive');
+
+    const [_, movieId] = location.hash.split('=');//Convertimos en un array que separa en indices cada vez que encuentre un =
+    getMovieById(movieId);
 }
 
 function searchPage() {
