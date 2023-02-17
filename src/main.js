@@ -10,7 +10,31 @@ const api = axios.create({
     },
 });
 
-
+function likedMoviesList() {
+    const item = JSON.parse(localStorage.getItem('liked_movies'));
+    let movies;
+  
+    if (item) {
+      movies = item;
+    } else {
+      movies = {};
+    }
+    
+    return movies;
+  }
+  
+  function likeMovie(movie) {
+    // movie.id
+    const likedMovies = likedMoviesList();
+  
+    if (likedMovies[movie.id]) {
+      likedMovies[movie.id] = undefined;
+    } else {
+      likedMovies[movie.id] = movie;
+    }
+  
+    localStorage.setItem('liked_movies', JSON.stringify(likedMovies));
+  }
 
 //Utils-Helpers
 
@@ -24,48 +48,56 @@ const lazyLoader = new IntersectionObserver((entries) => {
     });
 });
 
-function createMovies (movies, container, {lazyLoad = false, clean = true} = {}) {
-
+function createMovies(
+    movies,
+    container,
+    {
+      lazyLoad = false,
+      clean = true,
+    } = {},
+  ) {
     if (clean) {
-        
-        //Para limpiar datos repetidos
-        container.innerHTML = '';
+      container.innerHTML = '';
     }
-
+  
     movies.forEach(movie => {
-        const movieContainer = document.createElement('div');
-        movieContainer.classList.add('movie-container');
-        movieContainer.addEventListener('click', () => {
-            location.hash = `#movie=${movie.id}`
-        })
-
-        const movieImg = document.createElement('img');
-        //Añado la clase
-        movieImg.classList.add('movie-img');
-        //El objeto movie tiene entre sus propiedades el titulo de la pelicula que será mi alt
-        movieImg.setAttribute('alt', movie.title);
-
-        
-        //posther path tiene el enlace de la imagen que quiero mostrar.
+      const movieContainer = document.createElement('div');
+      movieContainer.classList.add('movie-container');
+  
+      const movieImg = document.createElement('img');
+      movieImg.classList.add('movie-img');
+      movieImg.setAttribute('alt', movie.title);
+      movieImg.setAttribute(
+        lazyLoad ? 'data-img' : 'src',
+        'https://image.tmdb.org/t/p/w300' + movie.poster_path,
+      );
+      movieImg.addEventListener('click', () => {
+        location.hash = '#movie=' + movie.id;
+      });
+      movieImg.addEventListener('error', () => {
         movieImg.setAttribute(
-            lazyLoad ? 'data-img': 'src', 
-            `https://image.tmdb.org/t/p/w300${movie.poster_path}`
+          'src',
+          'https://static.platzi.com/static/images/error/img404.png',
         );
-
-        
-        movieImg.addEventListener('error', ()=>{
-            movieImg.setAttribute('src', 'https://static.platzi.com/images/error/img404.png');
-        })
-
-            
-        if (lazyLoad) {
-            lazyLoader.observe(movieImg);
-        }
-
-        movieContainer.appendChild(movieImg);
-        container.appendChild(movieContainer);
+      }); 
+  
+      const movieBtn = document.createElement('button');
+      movieBtn.classList.add('movie-btn');
+      movieBtn.addEventListener('click', () => {
+        movieBtn.classList.toggle('movie-btn--liked');
+        likeMovie(movie);
+      });
+  
+      if (lazyLoad) {
+        lazyLoader.observe(movieImg);
+      }
+  
+      movieContainer.appendChild(movieImg);
+      movieContainer.appendChild(movieBtn);
+      container.appendChild(movieContainer);
     });
-} 
+  }
+  
 
 function createCategories(categories, container) {
     container.innerHTML = '';
@@ -113,7 +145,29 @@ async function getMoviesByCategory(id) {
         }
     });
     const movies = data.results;
-   createMovies(movies, genericSection, true);
+    maxPage = data.total_pages;
+   createMovies(movies, genericSection, true, {lazyLoad: true});
+}
+function getPaginatedMoviesByCategory(id){
+    return async function (){
+        const {scrollTop, scrollHeight, clientHeight} = document.documentElement;
+        const scrollIsBottom = (scrollTop + clientHeight) >= (scrollHeight - 15);
+    
+        const pageIsNotMax = page < maxPage;
+    
+        if (scrollIsBottom && pageIsNotMax) {
+            page++;
+            const {data} = await api('discover/movie',{
+                params: {
+                    //Este parametro hace referencia al id de los generos de las películoas que se pasa en navigation
+                    with_genres: id,
+                    page,
+                }
+            });
+            const movies = data.results;
+            createMovies(movies, genericSection, {lazyLoad:true, clean:false});        
+        }
+    }
 }
 async function getMoviesBySearch(query) {
     const {data} = await api('search/movie',{
@@ -123,7 +177,30 @@ async function getMoviesBySearch(query) {
         }
     });
     const movies = data.results;
+    maxPage = data.total_pages;
    createMovies(movies, genericSection);
+}
+ function getPaginatedMoviesBySearch(query){
+    return async function (){
+        const {scrollTop, scrollHeight, clientHeight} = document.documentElement;
+        const scrollIsBottom = (scrollTop + clientHeight) >= (scrollHeight - 15);
+    
+        const pageIsNotMax = page < maxPage;
+    
+        if (scrollIsBottom && pageIsNotMax) {
+            page++;
+    
+            const {data} = await api('search/movie',{
+                params: {
+                    //Este parametro hace referencia al query que enviamos a la api que es el resultado de busqueda del usuario
+                    query,
+                    page,
+                }
+            });
+            const movies = data.results;
+            createMovies(movies, genericSection, {lazyLoad:true, clean:false});        
+        }
+    }
 }
 async function getTrendingMovies() {
 

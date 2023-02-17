@@ -109,6 +109,8 @@ function categoriesPage() {
 
     headerCategoryTitle.innerHTML = categoryName.replace('%20',' ');
     getMoviesByCategory(categoryId);
+
+    infiniteScroll = getPaginatedMoviesByCategory(categoryId);
 }
 
 function movieDetailsPage() {
@@ -149,6 +151,8 @@ function searchPage() {
     //['#search' - 'buscador']
     const [_, query] = location.hash.split('=');//Convertimos en un array que separa en indices cada vez que encuentre un =
     getMoviesBySearch(query);
+
+    infiniteScroll = getPaginatedMoviesBySearch(query);
 }
 function trendsPage() {
     console.log('TRENDS');
