@@ -7,6 +7,7 @@ const api = axios.create({
     //Nuestros query parameters, que siempre se enviarán a cada petición
     params: {
         'api_key' : API_KEY,
+        "language": navigator.language || "es-ES"
     },
 });
 
@@ -83,9 +84,11 @@ function createMovies(
   
       const movieBtn = document.createElement('button');
       movieBtn.classList.add('movie-btn');
+      likedMoviesList()[movie.id] && movieBtn.classList.add('movie-btn--liked');
       movieBtn.addEventListener('click', () => {
         movieBtn.classList.toggle('movie-btn--liked');
         likeMovie(movie);
+        getLikedMovies();
       });
   
       if (lazyLoad) {
@@ -259,4 +262,11 @@ async function getRelatedMoviesById(id) {
     const relatedMovies = data.results;
 
     createMovies(relatedMovies,relatedMoviesContainer);
+}
+
+function getLikedMovies(){
+  const likedMovies = likedMoviesList();
+  const moviesArray =  Object.values(likedMovies);
+
+  createMovies(moviesArray, likedMoviesListArticle, {lazyLoad:true, clean: true});
 }
